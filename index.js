@@ -55,6 +55,16 @@ async function run() {
       res.json(result);
     });
 
+    // get user added car
+    app.get("/added-cars/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const query = {
+        userId: userId,
+      };
+      const result = await carsCollection.find(query).toArray();
+      res.json(result);
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
