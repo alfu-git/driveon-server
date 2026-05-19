@@ -1,6 +1,6 @@
 const dns = require("node:dns");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const express = require("express");
 const app = express();
@@ -31,9 +31,20 @@ async function run() {
     const db = client.db("driveon-db");
     const carsCollection = db.collection("cars");
 
+    // get all cars
     app.get("/cars", async (req, res) => {
       const cursor = carsCollection.find();
       const result = await cursor.toArray();
+      res.json(result);
+    });
+
+    // get car by id
+    app.get("/cars/:carId", async (req, res) => {
+      const { carId } = req.params;
+      const query = {
+        _id: new ObjectId(carId),
+      };
+      const result = await carsCollection.findOne(query);
       res.json(result);
     });
 
