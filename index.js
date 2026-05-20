@@ -30,6 +30,7 @@ async function run() {
 
     const db = client.db("driveon-db");
     const carsCollection = db.collection("cars");
+    const bookingsCollection = db.collection("user-bookings");
 
     // get all cars
     app.get("/cars", async (req, res) => {
@@ -85,6 +86,13 @@ async function run() {
         _id: new ObjectId(carId),
       };
       const result = await carsCollection.deleteOne(query);
+      res.json(result);
+    });
+
+    // post user bookings car
+    app.post("/user-bookings", async (req, res) => {
+      const bookingDoc = req.body;
+      const result = await bookingsCollection.insertOne(bookingDoc);
       res.json(result);
     });
 
