@@ -108,6 +108,12 @@ async function run() {
     app.post("/user-bookings", async (req, res) => {
       const bookingDoc = req.body;
       const result = await bookingsCollection.insertOne(bookingDoc);
+
+      await carsCollection.updateOne(
+        { carName: bookingDoc?.carName },
+        { $inc: { bookingCount: 1 } },
+      );
+
       res.json(result);
     });
 
