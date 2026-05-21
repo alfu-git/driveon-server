@@ -26,7 +26,9 @@ app.get("/", (req, res) => {
 });
 
 // jwt verify middleware
-const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -52,7 +54,7 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("driveon-db");
     const carsCollection = db.collection("cars");
@@ -60,7 +62,7 @@ async function run() {
 
     // get all cars
     app.get("/cars", async (req, res) => {
-      const { search = "", carType = "" } = req.query;
+      const { userId = "", search = "", carType = "" } = req.query;
 
       const query = {};
 
@@ -74,6 +76,20 @@ async function run() {
       if (carType) {
         const carTypeArray = carType.split(",");
         query.carType = { $in: carTypeArray };
+      }
+
+      if (userId) {
+        query.$and = [
+          ...(query.$and || []),
+          {
+            $or: [
+              { userId: null },
+              { userId: userId },
+            ],
+          },
+        ];
+      } else {
+        query.userId = null;
       }
 
       const result = await carsCollection.find(query).toArray();
@@ -150,7 +166,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
