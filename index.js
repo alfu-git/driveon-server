@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -23,6 +24,31 @@ const client = new MongoClient(uri, {
 app.get("/", (req, res) => {
   res.send("Hello From Server");
 });
+
+// jwt verify middleware
+const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    console.error("Token validation failed:", error);
+    throw error;
+  }
+};
 
 async function run() {
   try {
@@ -55,7 +81,7 @@ async function run() {
     });
 
     // get car by id
-    app.get("/cars/:carId", async (req, res) => {
+    app.get("/cars/:carId", verifyToken, async (req, res) => {
       const { carId } = req.params;
       const query = {
         _id: new ObjectId(carId),
@@ -65,14 +91,14 @@ async function run() {
     });
 
     // post user added car
-    app.post("/added-cars", async (req, res) => {
+    app.post("/added-cars", verifyToken, async (req, res) => {
       const addedCarDoc = req.body;
       const result = await carsCollection.insertOne(addedCarDoc);
       res.json(result);
     });
 
     // get user added car
-    app.get("/added-cars/:userId", async (req, res) => {
+    app.get("/added-cars/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const query = {
         userId: userId,
@@ -82,7 +108,7 @@ async function run() {
     });
 
     // update user added car
-    app.patch("/added-cars/:carId", async (req, res) => {
+    app.patch("/added-cars/:carId", verifyToken, async (req, res) => {
       const { carId } = req.params;
       const updateCarData = req.body;
 
@@ -95,7 +121,7 @@ async function run() {
     });
 
     // delete user added car
-    app.delete("/added-cars/:carId", async (req, res) => {
+    app.delete("/added-cars/:carId", verifyToken, async (req, res) => {
       const { carId } = req.params;
       const query = {
         _id: new ObjectId(carId),
@@ -105,7 +131,7 @@ async function run() {
     });
 
     // post user bookings car
-    app.post("/user-bookings", async (req, res) => {
+    app.post("/user-bookings", verifyToken, async (req, res) => {
       const bookingDoc = req.body;
       const result = await bookingsCollection.insertOne(bookingDoc);
 
@@ -118,7 +144,7 @@ async function run() {
     });
 
     // get user all bookings car
-    app.get("/user-bookings/:userId", async (req, res) => {
+    app.get("/user-bookings/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await bookingsCollection.find({ userId }).toArray();
       res.send(result);
