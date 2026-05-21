@@ -34,15 +34,22 @@ async function run() {
 
     // get all cars
     app.get("/cars", async (req, res) => {
-      const searchValue = req.query.search || "";
+      const { search = "", carType = "" } = req.query;
 
-      const query = {
-        $or: [
-          { carName: { $regex: searchValue, $options: "i" } },
-          { brandName: { $regex: searchValue, $options: "i" } },
-          { category: { $regex: searchValue, $options: "i" } },
-        ],
-      };
+      const query = {};
+
+      if (search) {
+        query.$or = [
+          { carName: { $regex: search, $options: "i" } },
+          { brandName: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      if (carType) {
+        const carTypeArray = carType.split(",");
+        query.carType = { $in: carTypeArray };
+      }
+
       const result = await carsCollection.find(query).toArray();
       res.json(result);
     });
