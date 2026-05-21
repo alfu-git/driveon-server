@@ -62,7 +62,7 @@ async function run() {
 
     // get all cars
     app.get("/cars", async (req, res) => {
-      const { userId = "", search = "", carType = "" } = req.query;
+      const { search = "", carType = "" } = req.query;
 
       const query = {};
 
@@ -76,20 +76,6 @@ async function run() {
       if (carType) {
         const carTypeArray = carType.split(",");
         query.carType = { $in: carTypeArray };
-      }
-
-      if (userId) {
-        query.$and = [
-          ...(query.$and || []),
-          {
-            $or: [
-              { userId: null },
-              { userId: userId },
-            ],
-          },
-        ];
-      } else {
-        query.userId = null;
       }
 
       const result = await carsCollection.find(query).toArray();
